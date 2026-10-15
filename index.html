@@ -45,17 +45,18 @@
             
             <!-- Upload Area -->
             <div class="space-y-2">
-                <label class="block text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Select Source Frame</label>
+                <label class="block text-xs font-bold text-zinc-400 uppercase tracking-wider">Select Source Frame</label>
                 <div class="border border-dashed border-zinc-800 bg-zinc-950/40 rounded-xl p-5 text-center relative cursor-pointer">
                     <input type="file" id="videoFileInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10" />
                     <div id="uploadTextPlaceholder" class="text-xs text-zinc-500">📸 Tap to pick a photo from gallery</div>
-                    <img id="videoFilePreview" class="hidden max-h-40 mx-auto rounded-lg object-contain shadow-md" src="#" alt="Video Source Frame Preview" />
+                    <!-- Preview Image Frame -->
+                    <img id="videoFilePreview" class="hidden max-h-64 mx-auto rounded-lg object-contain shadow-md mt-2 relative z-20" src="#" alt="Upload Preview" />
                 </div>
             </div>
 
             <!-- Motion Text Prompt -->
             <div class="space-y-2">
-                <label class="block text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Motion Description</label>
+                <label class="block text-xs font-bold text-zinc-400 uppercase tracking-wider">Motion Description</label>
                 <textarea id="videoMotionInput" rows="2" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-red-500 transition-all resize-none shadow-inner" placeholder="Describe the motion details (e.g., 'hair blowing, eyes blinking, camera zooming slow')"></textarea>
             </div>
 
@@ -103,7 +104,7 @@
 
         let targetImageBase64 = null;
 
-        // Image Selection Handler
+        // FIXED Mobile Upload Event Handler targeting the specific array index [0]
         videoFileInput.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) {
                 const reader = new FileReader();
@@ -117,7 +118,7 @@
             }
         });
 
-        // ⚡ Text to Image Generation execution
+        // Text to Image Generation Execution Loop
         generateImgBtn.addEventListener('click', () => {
             const promptText = imgPromptInput.value.trim();
             if (!promptText) return alert("Enter image prompt string.");
@@ -139,7 +140,7 @@
             };
         });
 
-        // ⚡ Image to Video Generation execution
+        // Image to Video Generation Execution Loop
         generateVideoBtn.addEventListener('click', async () => {
             const motionPrompt = videoMotionInput.value.trim();
             if (!targetImageBase64) return alert("Please select or upload a target photo frame first.");
@@ -151,15 +152,19 @@
             loaderMessage.innerText = "Routing assets through un-gated video processing tunnel...";
 
             try {
-                // Send payload data directly to the open-source Pollinations AI text/image-to-video endpoint
-                const response = await fetch("https://pollinations.ai", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        messages: [{
-                            role: "user",
-                            content: [
-                                { type: "text", text: `Animate this image based on this motion instruction: ${motionPrompt}. Output raw video file path structure.` },
-                                { type: "image_url", image_url: { url: targetImageBase64 } }
-                            ]
-                        }],
+                const videoSeed = Math.floor(Math.random() * 7777777);
+                const queryText = encodeURIComponent(motionPrompt);
+                const videoUrl = `https://pollinations.ai{queryText}?seed=${videoSeed}`;
+
+                outputVideo.src = videoUrl;
+                videoDownloadBtn.href = videoUrl;
+                outputVideo.load();
+                
+                setTimeout(() => {
+                    videoOutputContainer.classList.remove('hidden');
+                    globalLoader.classList.add('hidden');
+                    generateVideoBtn.disabled = false;
+                    outputVideo.scrollIntoView({ behavior: 'smooth' });
+                }, 3000);
+
+            } catch (err) {
