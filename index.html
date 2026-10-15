@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio Unbound</title>
+    <script src="https://tailwindcss.com"></script>
+    <script type="module">
+        import { Client } from "https://jsdelivr.net";
+        window.GradioClient = Client;
+    </script>
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #09090b 0%, #18181b 100%); }
+    </style>
+</head>
+<body class="gradient-bg text-zinc-100 min-h-screen flex flex-col font-sans select-none">
+
+    <!-- Header -->
+    <header class="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-4">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <h1 class="text-lg font-black tracking-wider uppercase bg-gradient-to-r from-red-500 to-amber-500 bg-clip-text text-transparent">Studio Unbound</h1>
+            <span class="text-[10px] bg-red-950 text-red-400 px-2 py-0.5 rounded-md border border-red-900 font-bold tracking-widest uppercase">No Filter</span>
+        </div>
+    </header>
+
+    <!-- Workspace -->
+    <main class="flex-1 max-w-md w-full mx-auto p-4 space-y-6 pb-24">
+        
+        <!-- Status Notification -->
+        <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3.5 text-xs text-zinc-400 leading-normal">
+            🔓 **Unrestricted Generation Tunnel Active.** Prompts are processed directly via raw open-source weights. No text blocking or safety filters are applied to outputs.
+        </div>
+
+        <!-- Text Input Generation Section -->
+        <div class="space-y-2">
+            <label class="block text-xs font-bold uppercase tracking-widest text-zinc-400">Creative Generation Prompt</label>
+            <textarea id="promptInput" rows="4" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-red-500 transition-all resize-none shadow-inner" placeholder="Type exactly what you want to see. Describe clothing styles, facial features, lighting, or poses with full detail..."></textarea>
+        </div>
+
+        <!-- Trigger Button -->
+        <div class="pt-2">
+            <button id="generateBtn" class="w-full bg-gradient-to-r from-red-600 to-amber-600 active:from-red-700 active:to-amber-700 text-white font-black uppercase tracking-widest py-4 px-6 rounded-xl shadow-lg transition-all transform active:scale-[0.99] text-sm">
+                ⚡ Render Uncensored Image
+            </button>
+        </div>
+
+        <!-- Real-time Network Feed Logs -->
+        <div id="loadingState" class="hidden bg-zinc-900 border border-zinc-800 rounded-xl p-5 text-center space-y-3 shadow-xl">
+            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500 mx-auto"></div>
+            <p id="statusMessage" class="text-xs font-semibold text-zinc-400">Pinging server array cluster...</p>
+        </div>
+
+        <!-- Render Output Container -->
+        <div id="outputContainer" class="hidden space-y-3">
+            <label class="block text-xs font-bold uppercase tracking-widest text-emerald-400">✨ Render Complete</label>
+            <div class="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl p-2">
+                <img id="outputImage" class="w-full h-auto rounded-lg object-contain bg-zinc-900" src="#" alt="Raw Output Content" />
+                <div class="pt-3">
+                    <a id="downloadBtn" download="studio-unbound-render.jpg" href="#" class="w-full block bg-zinc-900 text-center text-xs font-bold uppercase tracking-wider py-3 rounded-lg hover:bg-zinc-800 transition-colors border border-zinc-800">
+                        📥 Save Image to Device
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script type="module">
+        const promptInput = document.getElementById('promptInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const loadingState = document.getElementById('loadingState');
+        const statusMessage = document.getElementById('statusMessage');
+        const outputContainer = document.getElementById('outputContainer');
+        const outputImage = document.getElementById('outputImage');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        generateBtn.addEventListener('click', async () => {
+            if (!promptInput.value.trim()) {
+                alert("Please type a descriptive generation prompt first.");
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-40');
+            loadingState.classList.remove('hidden');
+            outputContainer.classList.add('hidden');
+            statusMessage.innerText = "Connecting directly to uncensored model pipeline...";
+
+            try {
+                // Connecting to an un-gated, pure photorealistic open weights cluster node
+                const app = await window.GradioClient.connect("prodia/fast-stable-diffusion");
+                statusMessage.innerText = "Processing request frames without safety overrides (Est: 5-15 sec)...";
+
+                const result = await app.predict("/predict", [
+                    promptInput.value,                              // User instruction text input
+                    "bad quality, blurry, deformed text, lowres",  // Global negative balancing text
+                    "sdv1_animeInspirations_v10.safetensors [799a7732]", // Selected underlying generation node style engine
+                    30,                                             // Total processing calculations sampling steps
+                    "DDIM",                                         // Direct math algorithm sampler rules
+                    7.0,                                            // Prompt weight adherence constraints variable
+                    512,                                            // Layout Width dimension matching rules
+                    768,                                            // Layout Height vertical display sizing variables
+                    -1                                              // Randomized seed initialization values array
+                ]);
+                
+                if (result && result.data && result.data[0]) {
+                    const imgUrl = result.data[0];
+                    outputImage.src = imgUrl;
+                    downloadBtn.href = imgUrl;
+                    outputContainer.classList.remove('hidden');
+                    outputImage.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert("The cluster experienced a traffic block. Try hitting generate once more.");
+                }
+
+            } catch (error) {
+                console.error("Pipeline Error:", error);
+                alert("Network timeout. The public engine cluster is heavy. Tapping generate again immediately establishes a fresh network route!");
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-40');
+                loadingState.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
